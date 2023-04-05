@@ -2,13 +2,14 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Button from "./components/Button";
 
 // Set your host
-const API_URL = "http://192.168.86.27:3000/photo";
+const API_URL = "http://127.0.0.1:3000/photo"; // Works in the same computer
+// const API_URL = "http://192.168.86.27:3000/photo"; // Put your server host IP and it works in the local network
 
 function App() {
-  const [file, setFile] = useState<File | Blob | null>(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+  const [error, setError] = useState("");
+  const [file, setFile] = useState<File | Blob | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
