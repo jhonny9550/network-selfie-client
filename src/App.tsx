@@ -3,7 +3,7 @@ import Button from "./components/Button";
 
 // Set your host
 const API_URL = "http://127.0.0.1:3000/photo"; // Works in the same computer
-// const API_URL = "http://192.168.86.27:3000/photo"; // Put your server host IP and it works in the local network
+// const API_URL = "http://192.168.86.27:3000/photo"; // Put your server IP and it works in the local network
 
 function App() {
   const [loading, setLoading] = useState(false);
