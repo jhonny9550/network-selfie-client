@@ -8,11 +8,13 @@ export type ButtonProps = {
   onClick?: React.MouseEventHandler<HTMLButtonElement>;
   className?: string;
   type?: "button" | "submit" | "reset";
+  hidden?: boolean;
 };
 
 const Button: React.FC<ButtonProps> = (props) => {
   return (
     <button
+      hidden={props.hidden}
       type={props.type}
       onClick={props.onClick}
       className={clsx([

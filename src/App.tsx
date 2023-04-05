@@ -1,24 +1,17 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Button from "./components/Button";
-import DragAndDrop from "./components/DragAndDrop";
 
 // Set your host
 const API_URL = "http://192.168.86.27:3000/photo";
 
 function App() {
-  const [file, setFile] = useState<File | null>(null);
+  const [file, setFile] = useState<File | Blob | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const handleDrop = useCallback((file: File) => {
-    setFile(file);
-  }, []);
-
-  const handleInputClick = useCallback(() => {
-    fileInputRef.current?.click();
-  }, [fileInputRef]);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const handleOnInputChange: React.ChangeEventHandler<HTMLInputElement> =
     useCallback((e) => {
@@ -29,12 +22,6 @@ function App() {
         setError("");
       }
     }, []);
-
-  const handleReset = useCallback(() => {
-    setFile(null);
-    setSuccess(false);
-    setError("");
-  }, []);
 
   const handleSubmit: React.FormEventHandler<HTMLFormElement> = useCallback(
     async (e) => {
@@ -60,6 +47,43 @@ function App() {
     [file]
   );
 
+  const handleOnCapture = useCallback(() => {
+    const canvas = canvasRef.current;
+    const video = videoRef.current;
+    if (!canvas || !video) return;
+    const context = canvas.getContext("2d");
+    context?.scale(-1, 1);
+    context?.drawImage(video, 0, 0, canvas.width * -1, canvas.height);
+    canvas.toBlob(setFile);
+  }, [canvasRef.current, videoRef.current]);
+
+  const startVideo = useCallback(() => {
+    navigator.mediaDevices.getUserMedia({ video: true }).then((stream) => {
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+      }
+    });
+  }, [videoRef.current]);
+
+  const handleReset = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (canvas) {
+      const context = canvas.getContext("2d");
+      context?.clearRect(0, 0, canvas.width * -1, canvas.height);
+      context?.scale(-1, 1);
+    }
+    setFile(null);
+    setSuccess(false);
+    setError("");
+    startVideo();
+  }, [canvasRef.current, startVideo]);
+
+  useEffect(() => {
+    startVideo();
+  }, [startVideo]);
+
+  const renderUploadButton = !success && !error && !!file;
+
   return (
     <main className="app">
       <div className="container flex flex-col gap-6 items-center justify-center h-full py-10 px-8">
@@ -70,7 +94,7 @@ function App() {
           <p>Take a selfie and upload it</p>
         </div>
 
-        <div className="flex flex-col items-center gap-10 sm:flex-row">
+        <div className="flex flex-col items-center gap-10">
           <form className="text-center" onSubmit={handleSubmit}>
             <input
               accept="image/*"
@@ -78,39 +102,49 @@ function App() {
               type="file"
               ref={fileInputRef}
               onChange={handleOnInputChange}
+              capture
             />
-            <DragAndDrop
-              handleDrop={handleDrop}
-              handleClick={handleInputClick}
-            />
-            {error && <p className="text-red-400 mt-4">{error}</p>}
+            <video
+              className="rounded-lg border-4 border-solid border-gray-700 -scale-x-100"
+              ref={videoRef}
+              autoPlay
+              hidden={!!file}
+            ></video>
+            <canvas ref={canvasRef} width={648} height={488} hidden></canvas>
+            {file && (
+              <img
+                src={URL.createObjectURL(file)}
+                alt="a preview of your selfie"
+                className="mt-4 border-4 border-solid border-gray-700 sm:max-w-[648px]"
+              />
+            )}
+            {error && (
+              <p className="bg-red-400 text-white py-2 px-6 rounded-md mt-4">
+                {error}
+              </p>
+            )}
             {success && (
-              <p className="bg-green-400 mt-4 text-white py-2 px-6 rounded-md">
+              <p className="bg-green-400 text-white py-2 px-6 rounded-md mt-4">
                 Your image was uploaded and stored correctly!
               </p>
             )}
-            {success ? (
-              <Button className="mt-4" type="button" onClick={handleReset}>
-                Upload another image
-              </Button>
-            ) : (
-              <Button
-                className="mt-4"
-                type="submit"
-                loading={loading}
-                disabled={!file}
-              >
-                Upload
-              </Button>
-            )}
+            <div className="flex items-center justify-center mt-4 gap-4">
+              {file ? (
+                <Button type="button" onClick={handleReset}>
+                  Take another
+                </Button>
+              ) : (
+                <Button type="button" onClick={handleOnCapture}>
+                  Capture
+                </Button>
+              )}
+              {renderUploadButton && (
+                <Button type="submit" loading={loading} disabled={!file}>
+                  Upload
+                </Button>
+              )}
+            </div>
           </form>
-          {file && (
-            <img
-              src={URL.createObjectURL(file)}
-              alt="a preview of your selfie"
-              className="mt-4"
-            />
-          )}
         </div>
       </div>
     </main>
